@@ -1,0 +1,211 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Patient {
+    int id;
+    char name;
+    char status;
+} Patient;
+
+typedef struct QueueNode {
+    Patient data;
+    struct QueueNode* next;
+} QueueNode;
+
+typedef struct Queue {
+    QueueNode* front;
+    QueueNode* rear;
+} Queue;
+
+typedef struct StackNode {
+    Patient data;
+    struct StackNode* next;
+} StackNode;
+
+typedef struct Stack {
+    StackNode* top;
+} Stack;
+
+typedef struct ListNode {
+    Patient data;
+    struct ListNode* next;
+} ListNode;
+
+void enqueue(Queue* q, int id, const char* name) {
+    QueueNode* newNode = (QueueNode*)malloc(sizeof(QueueNode));
+    newNode->data.id = id;
+    strcpy(newNode->data.name, name);
+    strcpy(newNode->data.status, "bekliyor");
+    newNode->next = NULL;
+
+    if (q->rear == NULL) {
+        q->front = newNode;
+        q->rear = newNode;
+    } else {
+        q->rear->next = newNode;
+        q->rear = newNode;
+    }
+}
+
+int dequeue(Queue* q, Patient* p) {
+    if (q->front == NULL) {
+        return 0;
+    }
+    QueueNode* temp = q->front;
+    *p = temp->data;
+    q->front = q->front->next;
+    if (q->front == NULL) {
+        q->rear = NULL;
+    }
+    free(temp);
+    return 1;
+}
+
+void push(Stack* s, Patient p) {
+    StackNode* newNode = (StackNode*)malloc(sizeof(StackNode));
+    newNode->data = p;
+    strcpy(newNode->data.status, "muayenede");
+    newNode->next = s->top;
+    s->top = newNode;
+}
+
+int pop(Stack* s, Patient* p) {
+    if (s->top == NULL) {
+        return 0;
+    }
+    StackNode* temp = s->top;
+    *p = temp->data;
+    s->top = s->top->next;
+    free(temp);
+    return 1;
+}
+
+void addHistory(ListNode** head, Patient p) {
+    ListNode* newNode = (ListNode*)malloc(sizeof(ListNode));
+    newNode->data = p;
+    strcpy(newNode->data.status, "tamamlandi");
+    newNode->next = NULL;
+
+    if (*head == NULL) {
+        *head = newNode;
+        return;
+    }
+    ListNode* temp = *head;
+    while (temp->next != NULL) {
+        temp = temp->next;
+    }
+    temp->next = newNode;
+}
+
+void displayQueue(Queue q) {
+    printf("\n--- Bekleyen Hastalar (Kuyruk) ---\n");
+    if (q.front == NULL) {
+        printf("Kuyruk bos.\n");
+        return;
+    }
+    QueueNode* temp = q.front;
+    while (temp != NULL) {
+        printf("ID: %d | Isim: %s | Durum: %s\n", temp->data.id, temp->data.name, temp->data.status);
+        temp = temp->next;
+    }
+}
+
+void displayStack(Stack s) {
+    printf("\n--- Muayene Odasindaki Hastalar (Yigin) ---\n");
+    if (s.top == NULL) {
+        printf("Yigin bos.\n");
+        return;
+    }
+    StackNode* temp = s.top;
+    while (temp != NULL) {
+        printf("ID: %d | Isim: %s | Durum: %s\n", temp->data.id, temp->data.name, temp->data.status);
+        temp = temp->next;
+    }
+}
+
+void displayHistory(ListNode* head) {
+    printf("\n--- Gecmis Hasta Kayitlari (Bagli Liste) ---\n");
+    if (head == NULL) {
+        printf("Gecmis kayit yok.\n");
+        return;
+    }
+    ListNode* temp = head;
+    while (temp != NULL) {
+        printf("ID: %d | Isim: %s | Durum: %s\n", temp->data.id, temp->data.name, temp->data.status);
+        temp = temp->next;
+    }
+}
+
+int main() {
+    Queue waitQueue;
+    waitQueue.front = NULL;
+    waitQueue.rear = NULL;
+
+    Stack examStack;
+    examStack.top = NULL;
+
+    ListNode* historyHead = NULL;
+
+    int choice;
+    int id;
+    char name;
+    Patient p;
+
+    while (1) {
+        printf("\n=====================================\n");
+        printf("HASTANE HASTA TAKIP SISTEMI\n");
+        printf("1. Yeni Hasta Kaydi (Kuyruga Ekle)\n");
+        printf("2. Hastayi Muayeneye Al (Kuyruktan Yigina)\n");
+        printf("3. Muayeneyi Tamamla (Yigindan Gecmise)\n");
+        printf("4. Bekleyen Hastalari Goster\n");
+        printf("5. Muayenedeki Hastalari Goster\n");
+        printf("6. Tamamlanan Hastalari Goster\n");
+        printf("7. Cikis\n");
+        printf("Seciminiz: ");
+        if (scanf("%d", &choice) != 1) break;
+
+        switch (choice) {
+            case 1:
+                printf("Hasta ID: ");
+                scanf("%d", &id);
+                printf("Hasta Adi: ");
+                scanf(" %[^\n]", name);
+                enqueue(&waitQueue, id, name);
+                printf("Hasta kuyruga eklendi.\n");
+                break;
+            case 2:
+                if (dequeue(&waitQueue, &p)) {
+                    push(&examStack, p);
+                    printf("Hasta %s (%d) muayene odasina alindi.\n", p.name, p.id);
+                } else {
+                    printf("Bekleyen hasta yok!\n");
+                }
+                break;
+            case 3:
+                if (pop(&examStack, &p)) {
+                    addHistory(&historyHead, p);
+                    printf("Hasta %s (%d) muayenesi tamamlandi, gecmise eklendi.\n", p.name, p.id);
+                } else {
+                    printf("Muayene odasinda hasta yok!\n");
+                }
+                break;
+            case 4:
+                displayQueue(waitQueue);
+                break;
+            case 5:
+                displayStack(examStack);
+                break;
+            case 6:
+                displayHistory(historyHead);
+                break;
+            case 7:
+                return 0;
+            default:
+                printf("Gecersiz secim!\n");
+                break;
+        }
+    }
+
+    return 0;
+}
